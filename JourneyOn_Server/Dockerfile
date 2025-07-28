@@ -5,15 +5,13 @@ WORKDIR /src
 # Copy the solution file
 COPY JourneyOn_Server.sln .
 
-
 # Copy project files for better caching
 COPY API/API.csproj API/
 COPY Application/Application.csproj Application/
 COPY Infrastructure/Infrastructure.csproj Infrastructure/
-COPY Tests/Tests.csproj Tests/
 
 # Restore dependencies
-RUN dotnet restore JourneyOn_Server.sln
+RUN dotnet restore API/API.csproj
 
 # Copy the source code
 COPY API/ API/
@@ -21,7 +19,7 @@ COPY Application/ Application/
 COPY Infrastructure/ Infrastructure/
 
 # Build the application
-RUN dotnet publish API/API.csproj -c Release -o /app/publish
+RUN dotnet publish API/API.csproj -c Release -o /app/publish --no-restore
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
