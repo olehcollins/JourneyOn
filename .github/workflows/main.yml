@@ -3,7 +3,7 @@ name: Journey On – Build, Test, Smoke Test & Deploy
 on:
   push:
     branches:
-      - main
+      - n/a
 
 jobs:
   build-test:
