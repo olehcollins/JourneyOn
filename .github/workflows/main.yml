@@ -1,4 +1,4 @@
-name: Journey On. Build, Test and Deploy to Elastic Beanstalk
+name: Journey On – Build, Test, Smoke Test & Deploy
 
 on:
   push:
@@ -6,60 +6,115 @@ on:
       - main
 
 jobs:
-  build-and-test:
+  build-test:
     name: Build & Test
     runs-on: ubuntu-latest
+    outputs:
+      tests_ok: ${{ steps.test.outcome == 'success' }}
     steps:
       - name: ⏳ Check out repository
         uses: actions/checkout@v3
 
-      - name: 🔧 Set up .NET
+      - name: 🔧 Set up .NET 9.0
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '9.0.x'
 
-      - name: 📦 Restore dependencies
-        run: dotnet restore
-
-      - name: 🛠️ Build solution
-        run: dotnet build --no-restore --configuration Release
+      - name: 📦 Restore & build solution
+        run: |
+          dotnet restore JourneyOn_Server/JourneyOn_Server.sln
+          dotnet build   JourneyOn_Server/JourneyOn_Server.sln \
+                         --no-restore --configuration Release
 
       - name: 🧪 Run unit tests
-        run: dotnet test --no-build --verbosity normal
+        id: test
+        run: dotnet test JourneyOn_Server/Tests/Tests.csproj \
+              --no-build --verbosity normal
 
-  deploy:
-    name: Deploy to Elastic Beanstalk
-    needs: build-and-test
+  smoke-test:
+    name: Smoke Test API
+    needs: build-test
     runs-on: ubuntu-latest
-    if: ${{ always() && needs.build-and-test.result == 'success' }}
+    if: needs.build-test.outputs.tests_ok == 'true'
     steps:
       - name: ⏳ Check out repository
         uses: actions/checkout@v3
 
-      - name: 📦 Set up .NET
+      - name: 🔧 Set up .NET 9.0
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '9.0.x'
 
-      - name: 📂 Publish application
-        run: |
-          dotnet publish --configuration Release \
-            --output ./publish
+      - name: 📂 Publish API
+        run: dotnet publish JourneyOn_Server/API/API.csproj \
+              --configuration Release \
+              --output ./publish
 
-      - name: 🗜️ Zip application bundle
+      - name: ▶️ Start API in background
         run: |
-          cd publish
-          zip -r ../app.zip .
+          dotnet ./publish/API.dll --urls http://localhost:5002 &
+          echo "Waiting for API to become ready…" && sleep 10
 
-      - name: 🚀 Deploy to Elastic Beanstalk
-        uses: einaregilsson/beanstalk-deploy@v20
+      - name: ✅ Health check
+        run: curl --fail http://localhost:5002/weatherforecast
+
+  deploy:
+    name: Build Docker image & Deploy to Elastic Beanstalk
+    needs: smoke-test
+    runs-on: ubuntu-latest
+    if: needs.smoke-test.result == 'success'
+    steps:
+      - name: ⏳ Check out repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws_access_key:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_key:     ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name:   ${{ secrets.EB_APPLICATION_NAME }}
-          environment_name:   ${{ secrets.EB_ENVIRONMENT_NAME }}
-          region:             ${{ secrets.AWS_REGION }}
-          version_label:      ${{ github.sha }}
-          bucket_name:        ${{ secrets.EB_S3_BUCKET }}       # optional: if you have a dedicated S3 bucket
-          bucket_key:         app-${{ github.sha }}.zip
-          deployment_package: app.zip
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag & push Docker image
+        env:
+          ECR_REGISTRY:   ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          ECR_REPOSITORY: journeyon-api
+        run: |
+          IMAGE_TAG=${GITHUB_SHA::8}
+          docker build \
+            -f JourneyOn_Server/Dockerfile \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            JourneyOn_Server
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Create & zip Dockerrun.aws.json
+        run: |
+          IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/journeyon-api:${GITHUB_SHA::8}
+          cat > Dockerrun.aws.json <<EOF
+          {
+            "AWSEBDockerrunVersion": 1,
+            "Image": {
+              "Name": "${IMAGE_URI}",
+              "Update": "true"
+            },
+            "Ports": [
+              { "ContainerPort": "80" }
+            ]
+          }
+          EOF
+          zip -r eb.zip Dockerrun.aws.json
+
+      - name: Upload & deploy to Elastic Beanstalk
+        run: |
+          aws s3 cp eb.zip s3://$BEANSTALK_S3_BUCKET/eb-$GITHUB_SHA.zip
+          aws elasticbeanstalk create-application-version \
+            --application-name ${{ secrets.EB_APPLICATION_NAME }} \
+            --version-label ${{ github.sha }} \
+            --source-bundle S3Bucket=$BEANSTALK_S3_BUCKET,S3Key=eb-$GITHUB_SHA.zip
+          aws elasticbeanstalk update-environment \
+            --environment-name ${{ secrets.EB_ENVIRONMENT_NAME }} \
+            --version-label ${{ github.sha }}
+        env:
+          BEANSTALK_S3_BUCKET: ${{ secrets.EB_S3_BUCKET }}
