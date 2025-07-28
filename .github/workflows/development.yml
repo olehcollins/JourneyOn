@@ -1,0 +1,53 @@
+name: Test and Publish (development)
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⏳ Check out repository
+        uses: actions/checkout@v3
+
+      - name: 🔧 Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: 📦 Restore dependencies
+        run: dotnet restore
+
+      - name: 🛠️ Build solution
+        run: dotnet build --no-restore --configuration Release
+
+      - name: 🧪 Run unit tests
+        run: dotnet test --no-build --verbosity normal
+
+  publish:
+    name: Publish Build Output
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ needs.test.result == 'success' }}
+    steps:
+      - name: ⏳ Check out repository
+        uses: actions/checkout@v3
+
+      - name: 🔧 Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: 📂 Publish application
+        run: |
+          dotnet publish --configuration Release \
+            --output ./publish
+
+      - name: 📦 Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dotnet-publish
+          path: publish/
