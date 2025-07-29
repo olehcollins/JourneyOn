@@ -133,3 +133,9 @@ jobs:
         aws elasticbeanstalk update-environment \
           --environment-name ${{ secrets.EB_ENVIRONMENT_NAME }} \
           --version-label ${VERSION_LABEL}
+          
+    - name: Wait for deployment to complete
+      run: |
+       aws elasticbeanstalk wait environment-updated \
+         --region ${{ secrets.AWS_REGION }} \
+         --environment-name ${{ secrets.EB_ENV_NAME }}
