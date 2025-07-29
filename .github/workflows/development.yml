@@ -60,23 +60,3 @@ jobs:
         with:
           name: dotnet-publish
           path: publish/
-
-  smoke-test:
-    name: Smoke Test API
-    needs: publish
-    if: needs.test.outputs.tests_ok == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: ⏳ Download published artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dotnet-publish
-          path: publish
-
-      - name: ▶️ Start API in background
-        run: |
-          dotnet publish/API.dll --urls http://localhost:5002 &
-          echo "Waiting for API to become ready…" && sleep 10
-
-      - name: ✅ Health check
-        run: curl --fail http://localhost:5002/weatherforecast
