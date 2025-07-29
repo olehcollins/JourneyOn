@@ -48,7 +48,8 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: 📂 Publish API
-        run: dotnet publish JourneyOn_Server/API/API.csproj \
+        run: |
+          dotnet publish JourneyOn_Server/API/API.csproj \
               --configuration Release \
               --output ./publish
 
