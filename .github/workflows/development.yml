@@ -21,14 +21,14 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: 📦 Restore dependencies
-        run: dotnet restore
+        run: dotnet restore JourneyOn_Server/JourneyOn_Server.sln
 
       - name: 🛠️ Build solution
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build JourneyOn_Server/JourneyOn_Server.sln --no-restore --configuration Release
 
       - name: 🧪 Run unit tests
         id: run-tests
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet test JourneyOn_Server/Tests/Tests.csproj --no-build --verbosity normal
 
   publish:
     name: Publish Build Output
@@ -45,10 +45,7 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: 📂 Publish application
-        run: |
-          dotnet publish JourneyOn_Server/API/API.csproj \
-            --configuration Release \
-            --output publish
+        run: dotnet publish JourneyOn_Server/API/API.csproj --configuration Release --output publish
 
       - name: 📦 Upload artifact
         uses: actions/upload-artifact@v3
