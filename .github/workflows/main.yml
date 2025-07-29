@@ -66,6 +66,15 @@ jobs:
     needs: smoke-test
     runs-on: ubuntu-latest
     if: needs.smoke-test.result == 'success'
+    env:
+      AWS_REGION:      ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCOUNT_ID:  ${{ secrets.AWS_ACCOUNT_ID }}
+      EB_APP_NAME:     ${{ secrets.EB_APPLICATION_NAME }}
+      EB_ENV_NAME:     ${{ secrets.EB_ENVIRONMENT_NAME }}
+      EB_S3_BUCKET:    ${{ secrets.EB_S3_BUCKET }}
+      VERSION_LABEL:   ${{ github.run_number }}-${{ github.sha }}
     steps:
       - name: ⏳ Check out repository
         uses: actions/checkout@v3
@@ -85,39 +94,32 @@ jobs:
           ECR_REGISTRY:   ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           ECR_REPOSITORY: journeyon-api
         run: |
-          IMAGE_TAG=${GITHUB_SHA::8}
+          IMAGE_TAG=${GITHUB_RUN_NUMBER}-${GITHUB_SHA::8}
+          ECR_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/journeyon-api
           docker build \
             -f JourneyOn_Server/Dockerfile \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_URI:$IMAGE_TAG \
             JourneyOn_Server
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_URI:$IMAGE_TAG
 
-      - name: Create & zip Dockerrun.aws.json
+      - name: Prepare EB bundle
         run: |
-          IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/journeyon-api:${GITHUB_SHA::8}
-          cat > Dockerrun.aws.json <<EOF
-          {
-            "AWSEBDockerrunVersion": 1,
-            "Image": {
-              "Name": "${IMAGE_URI}",
-              "Update": "true"
-            },
-            "Ports": [
-              { "ContainerPort": "80" }
-            ]
-          }
-          EOF
-          zip -r eb.zip Dockerrun.aws.json
+          VERSION_LABEL=${GITHUB_RUN_NUMBER}-${GITHUB_SHA::8}
+          zip -j eb-${VERSION_LABEL}.zip JourneyOn_Server/Dockerrun.aws.json
+          
+      - name: Create application version
+        run: |
+          aws s3 cp eb-${VERSION_LABEL}.zip \
+            s3://${EB_S3_BUCKET}/eb-${VERSION_LABEL}.zip
 
-      - name: Upload & deploy to Elastic Beanstalk
-        run: |
-          aws s3 cp eb.zip s3://$BEANSTALK_S3_BUCKET/eb-$GITHUB_SHA.zip
           aws elasticbeanstalk create-application-version \
-            --application-name ${{ secrets.EB_APPLICATION_NAME }} \
-            --version-label ${{ github.sha }} \
-            --source-bundle S3Bucket=$BEANSTALK_S3_BUCKET,S3Key=eb-$GITHUB_SHA.zip
+            --application-name ${EB_APP_NAME} \
+            --version-label ${VERSION_LABEL} \
+            --source-bundle S3Bucket=${EB_S3_BUCKET},S3Key=eb-${VERSION_LABEL}.zip
+            
+      - name: Deploy that version
+        run: |
           aws elasticbeanstalk update-environment \
-            --environment-name ${{ secrets.EB_ENVIRONMENT_NAME }} \
-            --version-label ${{ github.sha }}
-        env:
-          BEANSTALK_S3_BUCKET: ${{ secrets.EB_S3_BUCKET }}
+            --environment-name ${EB_ENV_NAME} \
+            --version-label ${VERSION_LABEL}  
+            -- region ${AWS_REGION}
