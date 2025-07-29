@@ -15,12 +15,12 @@ jobs:
       - name: ⏳ Check out repository
         uses: actions/checkout@v3
 
-      - name: 🔧 Set up .NET
+      - name: 🔧 Set up .NET 9.0
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '9.0.x'
 
-      - name: 📦 Restore dependencies
+      - name: 📦 Restore solution
         run: dotnet restore JourneyOn_Server/JourneyOn_Server.sln
 
       - name: 🛠️ Build solution
@@ -28,24 +28,32 @@ jobs:
 
       - name: 🧪 Run unit tests
         id: run-tests
-        run: dotnet test JourneyOn_Server/Tests/Tests.csproj --no-build --verbosity normal
+        run: |
+          dotnet test \
+            --no-build \
+            --configuration Release \
+            --verbosity normal \
+            JourneyOn_Server/Tests/Tests.csproj
 
   publish:
     name: Publish Build Output
-    runs-on: ubuntu-latest
     needs: test
     if: needs.test.outputs.tests_ok == 'true'
+    runs-on: ubuntu-latest
     steps:
       - name: ⏳ Check out repository
         uses: actions/checkout@v3
 
-      - name: 🔧 Set up .NET
+      - name: 🔧 Set up .NET 9.0
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '9.0.x'
 
       - name: 📂 Publish application
-        run: dotnet publish JourneyOn_Server/API/API.csproj --configuration Release --output publish
+        run: |
+          dotnet publish JourneyOn_Server/API/API.csproj \
+            --configuration Release \
+            --output publish
 
       - name: 📦 Upload artifact
         uses: actions/upload-artifact@v3
@@ -55,9 +63,9 @@ jobs:
 
   smoke-test:
     name: Smoke Test API
-    runs-on: ubuntu-latest
     needs: publish
     if: needs.test.outputs.tests_ok == 'true'
+    runs-on: ubuntu-latest
     steps:
       - name: ⏳ Download published artifact
         uses: actions/download-artifact@v3
