@@ -20,8 +20,4 @@
         <Using Include="NUnit.Framework"/>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="API_Tests\" />
-    </ItemGroup>
-
 </Project>

@@ -1,5 +1,6 @@
-﻿namespace Tests;
+﻿namespace Tests.API_Tests;
 
+[TestFixture]
 public class Tests
 {
     [SetUp]
