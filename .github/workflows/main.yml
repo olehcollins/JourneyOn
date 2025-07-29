@@ -28,8 +28,10 @@ jobs:
 
       - name: 🧪 Run unit tests
         id: test
-        run: dotnet test JourneyOn_Server/Tests/Tests.csproj \
-              --no-build --verbosity normal
+        run: |
+          dotnet test JourneyOn_Server/Tests/Tests.csproj \
+            --no-build --verbosity normal \
+            --configuration Release
 
   smoke-test:
     name: Smoke Test API
@@ -46,7 +48,8 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: 📂 Publish API
-        run: dotnet publish JourneyOn_Server/API/API.csproj \
+        run: |
+          dotnet publish JourneyOn_Server/API/API.csproj \
               --configuration Release \
               --output ./publish
 
