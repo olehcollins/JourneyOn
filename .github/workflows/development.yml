@@ -75,7 +75,7 @@ jobs:
 
       - name: ▶️ Start API in background
         run: |
-          dotnet publish/API.dll --urls http://localhost:5002 &
+          dotnet ./publish/API.dll --urls http://localhost:5002 &
           echo "Waiting for API to become ready…" && sleep 10
 
       - name: ✅ Health check
