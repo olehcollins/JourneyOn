@@ -109,12 +109,12 @@ jobs:
         SHORT_SHA=${GITHUB_SHA::8}
         VERSION_LABEL=${GITHUB_RUN_NUMBER}-${SHORT_SHA}
         ECR_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/journeyon-api
-
-        # populate the template
+        
+        # Populate the template
         cp JourneyOn_Server/Dockerrun.aws.json.template Dockerrun.aws.json
         sed -i "s#__IMAGE_URI__#${ECR_URI}:${VERSION_LABEL}#" Dockerrun.aws.json
-
-        # zip it up for EB as a fresh version
+        
+        # Zip it up for EB as a fresh version
         zip eb-${VERSION_LABEL}.zip Dockerrun.aws.json
 
     - name: Create application version
