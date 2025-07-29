@@ -51,3 +51,31 @@ jobs:
         with:
           name: dotnet-publish
           path: publish/
+          
+    smoke-test:
+      name: Smoke Test API
+      needs: build-test
+      runs-on: ubuntu-latest
+      if: needs.build-test.outputs.tests_ok == 'true'
+      steps:
+        - name: ⏳ Check out repository
+          uses: actions/checkout@v3
+    
+        - name: 🔧 Set up .NET 9.0
+          uses: actions/setup-dotnet@v3
+          with:
+            dotnet-version: '9.0.x'
+    
+        - name: 📂 Publish API
+          run: |
+            dotnet publish JourneyOn_Server/API/API.csproj \
+                --configuration Release \
+                --output ./publish
+        - name: ▶️ Start API in background
+                run: |
+                  dotnet ./publish/API.dll --urls http://localhost:5002 &
+                  echo "Waiting for API to become ready…" && sleep 10
+        
+        - name: ✅ Health check
+          run: curl --fail http://localhost:5002/weatherforecast
+    
