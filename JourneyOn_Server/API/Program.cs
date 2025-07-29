@@ -1,10 +1,18 @@
+using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("missing connection string");
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(connectionString));
+builder.Services.AddControllers();
 
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -12,7 +20,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 var summaries = new[]
 {
@@ -32,6 +40,19 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast");
+
+app.MapControllers();
+
+if (builder.Environment.IsDevelopment())
+{
+    bool ok = await RdsDbConnection.ConnectToDbAsync(builder.Configuration,connectionString);
+    Console.WriteLine(
+        ok
+            ? "✅ Connected to AWS RDS!"
+            : "❌ Cannot connect to AWS RDS."
+    );
+}
+
 
 app.Run();
 
