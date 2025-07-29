@@ -105,7 +105,8 @@ jobs:
       - name: Prepare EB bundle
         run: |
           VERSION_LABEL=${GITHUB_RUN_NUMBER}-${GITHUB_SHA::8}
-          zip -j eb-${VERSION_LABEL}.zip JourneyOn_Server/Dockerrun.aws.json
+          cp JourneyOn_Server/Dockerrun.aws.json .
+          zip eb-${VERSION_LABEL}.zip Dockerrun.aws.json
           
       - name: Create application version
         run: |
