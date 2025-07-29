@@ -66,6 +66,14 @@ jobs:
     needs: smoke-test
     runs-on: ubuntu-latest
     if: needs.smoke-test.result == 'success'
+    env:
+      AWS_REGION:      ${{ secrets.AWS_REGION }}
+      AWS_ACCESS_KEY:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_ACCOUNT_ID:  ${{ secrets.AWS_ACCOUNT_ID }}
+      EB_APP_NAME:     ${{ secrets.EB_APPLICATION_NAME }}
+      EB_ENV_NAME:     ${{ secrets.EB_ENVIRONMENT_NAME }}
+      EB_S3_BUCKET:    ${{ secrets.EB_S3_BUCKET }}
     steps:
       - name: ⏳ Check out repository
         uses: actions/checkout@v3
@@ -85,43 +93,38 @@ jobs:
           ECR_REGISTRY:   ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
           ECR_REPOSITORY: journeyon-api
         run: |
-          IMAGE_TAG=${GITHUB_SHA::8}
+          IMAGE_TAG=${GITHUB_RUN_NUMBER}-${GITHUB_SHA::8}
+          ECR_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/journeyon-api
           docker build \
             -f JourneyOn_Server/Dockerfile \
-            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_URI:$IMAGE_TAG \
             JourneyOn_Server
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_URI:$IMAGE_TAG
 
-      - name: Create & zip Dockerrun.aws.json
+      - name: Prepare EB bundle
         run: |
-          IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/journeyon-api:${GITHUB_SHA::8}
+          VERSION_LABEL=${GITHUB_RUN_NUMBER}-${GITHUB_SHA::8}
           cat > Dockerrun.aws.json <<EOF
           {
             "AWSEBDockerrunVersion": 1,
-            "Image": {
-              "Name": "${IMAGE_URI}",
-              "Update": "true"
-            },
-            "Ports": [
-              { "ContainerPort": "80" }
-            ]
+            "Image": { "Name": "${ECR_URI}:${VERSION_LABEL}", "Update": "true" },
+            "Ports": [ { "ContainerPort": "80" } ]
           }
           EOF
-          zip -r eb.zip Dockerrun.aws.json
-
-      - name: Upload & deploy to Elastic Beanstalk
-        env:
-          BEANSTALK_S3_BUCKET: ${{ secrets.EB_S3_BUCKET }}
+          zip -r eb-${VERSION_LABEL}.zip Dockerrun.aws.json
+          
+      - name: Create application version
         run: |
-          # make a unique label: run number and short SHA
-          VERSION_LABEL="${GITHUB_RUN_NUMBER}-${GITHUB_SHA::8}"
-          # upload zip under that label
-          aws s3 cp eb.zip s3://$BEANSTALK_S3_BUCKET/eb-${VERSION_LABEL}.zip
-          # create & deploy that version
+          aws s3 cp eb-${VERSION_LABEL}.zip \
+            s3://${EB_S3_BUCKET}/eb-${VERSION_LABEL}.zip
+
           aws elasticbeanstalk create-application-version \
-            --application-name ${{ secrets.EB_APPLICATION_NAME }} \
-            --version-label $VERSION_LABEL \
-            --source-bundle S3Bucket=$BEANSTALK_S3_BUCKET,S3Key=eb-${VERSION_LABEL}.zip
+            --application-name ${EB_APP_NAME} \
+            --version-label ${VERSION_LABEL} \
+            --source-bundle S3Bucket=${EB_S3_BUCKET},S3Key=eb-${VERSION_LABEL}.zip
+            
+      - name: Deploy that version
+        run: |
           aws elasticbeanstalk update-environment \
-            --environment-name ${{ secrets.EB_ENVIRONMENT_NAME }} \
-            --version-label $VERSION_LABEL
+            --environment-name ${EB_ENV_NAME} \
+            --version-label ${VERSION_LABEL}  
