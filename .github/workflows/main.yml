@@ -28,7 +28,8 @@ jobs:
 
       - name: 🧪 Run unit tests
         id: test
-        run: dotnet test JourneyOn_Server/Tests/Tests.csproj \
+        run: |
+          dotnet test JourneyOn_Server/Tests/Tests.csproj \
             --no-build --verbosity normal \
             --configuration Release
 
