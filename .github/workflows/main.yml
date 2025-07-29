@@ -128,3 +128,4 @@ jobs:
           aws elasticbeanstalk update-environment \
             --environment-name ${EB_ENV_NAME} \
             --version-label ${VERSION_LABEL}  
+            -- region ${AWS_REGION}
