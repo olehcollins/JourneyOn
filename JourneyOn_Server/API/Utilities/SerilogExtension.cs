@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace API.Utilities;
 
-[ExcludeFromCodeCoverage(Justification = "Middle Not Part of Testing")]
+[ExcludeFromCodeCoverage(Justification = "Middleware configuration not included in unit testing")]
 public static class SerilogExtension
 {
     public static IHostBuilder AddSerilogDocumentation(this IHostBuilder host,
