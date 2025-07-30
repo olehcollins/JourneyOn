@@ -49,7 +49,7 @@ public sealed class AccessTokenService (IConfiguration configuration, UserManage
             issuer: jwtIssuer,
             audience: jwtAudience,
             claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
+            expires: DateTime.UtcNow.AddMinutes(30),
             signingCredentials: credentials);
         var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
 
