@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace API.Utilities;
 
-[ExcludeFromCodeCoverage (Justification = "Middle Not Part of Testing")]
+[ExcludeFromCodeCoverage (Justification = "Exception handler not included in unit testing")]
 public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetailsService)
     : IExceptionHandler
 {
