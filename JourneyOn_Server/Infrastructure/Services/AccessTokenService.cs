@@ -33,7 +33,7 @@ public sealed class AccessTokenService (IConfiguration configuration, UserManage
         // Define the token's claims.
         var claims = new[]
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Email!),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("uid", user.Id.ToString()),
             new Claim("role", userRole ?? throw new InvalidOperationException("Failed to retrieve user role for the specified user.")),
