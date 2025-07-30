@@ -36,7 +36,7 @@ public sealed class AccessTokenService (IConfiguration configuration, UserManage
             new Claim(JwtRegisteredClaimNames.Sub, user.Email!),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("uid", user.Id.ToString()),
-            new Claim("role", userRole ?? throw new NullReferenceException("User role is null")),
+            new Claim("role", userRole ?? throw new InvalidOperationException("Failed to retrieve user role for the specified user.")),
             // Add additional claims as needed.
         };
 
