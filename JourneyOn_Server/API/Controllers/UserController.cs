@@ -78,6 +78,16 @@ public class UserController(IdentityApplicationDbContext dbContext, UserManager<
                 new ResponseModel<IEnumerable<IdentityError>>(updateResult.Errors, "Failed to update user data"));
         }
 
+        // Remove existing roles
+        var currentRoles = await userManager.GetRolesAsync(user);
+        var removeRolesResult = await userManager.RemoveFromRolesAsync(user, currentRoles);
+        if (!removeRolesResult.Succeeded)
+        {
+            return BadRequest(
+                new ResponseModel<IEnumerable<IdentityError>>(removeRolesResult.Errors, "Failed to remove existing roles"));
+        }
+
+        // Add the new role
         var updateRoleResult = await userManager.AddToRoleAsync(user, dto.Role);
         if (!updateRoleResult.Succeeded)
         {
