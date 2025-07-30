@@ -60,7 +60,7 @@ public class UserController(IdentityApplicationDbContext dbContext, UserManager<
         if (user == null)
         {
             return BadRequest(
-                new ResponseModel<ApplicationBuilder>(null, $"User with email ${dto.Email} doesn't exists."));
+                new ResponseModel<ApplicationBuilder>(null, $"User with email {dto.Email} doesn't exist."));
         }
 
         user.FirstName = dto.FirstName;
