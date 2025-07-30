@@ -41,7 +41,7 @@ public sealed class AccessTokenService (IConfiguration configuration, UserManage
         };
 
         // Get the secret key from the configuration.
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey!));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         // Create the token.
