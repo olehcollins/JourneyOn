@@ -22,7 +22,7 @@ public class UserController(IdentityApplicationDbContext dbContext, UserManager<
         if (await userManager.FindByEmailAsync(dto.Email) != null)
         {
             return BadRequest(
-                new ResponseModel<ApplicationBuilder>(null, "Email already exists."));
+                new ResponseModel<ApplicationUser>(null, "Email already exists."));
         }
 
         // 2) Create the user
