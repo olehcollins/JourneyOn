@@ -46,7 +46,7 @@ public class UserController(IdentityApplicationDbContext dbContext, UserManager<
         if (!addRoleResult.Succeeded)
         {
             return BadRequest(
-                new ResponseModel<IEnumerable<IdentityError>>(addRoleResult.Errors, $"Failed to set user role to ${dto.Role}"));
+                new ResponseModel<IEnumerable<IdentityError>>(addRoleResult.Errors, $"Failed to set user role to {dto.Role}"));
         }
 
         return Ok(new ResponseModel<ApplicationUser>(user, "new Apprentice created successfully"));
