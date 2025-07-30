@@ -11,6 +11,84 @@ namespace API.Controllers;
 [Route("[controller]")]
 public class UserController(IdentityApplicationDbContext dbContext, UserManager<ApplicationUser> userManager) : ControllerBase
 {
+    [HttpPost("create-apprentice")]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserModel dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return  BadRequest(new ResponseModel<ApplicationUser>(null, "Invalid input"));
+        }
+        // 1) Skip if already exists
+        if (await userManager.FindByEmailAsync(dto.Email) != null)
+        {
+            return BadRequest(
+                new ResponseModel<ApplicationBuilder>(null, "Email already exists."));
+        }
+
+        // 2) Create the user
+        var user = new ApplicationUser
+        {
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            UserName = dto.Email,
+            Email = dto.Email,
+            CourseId = dto.CourseId
+        };
+
+        var createResult = await userManager.CreateAsync(user, dto.Password);
+        if (!createResult.Succeeded)
+        {
+            return BadRequest(
+                new ResponseModel<IEnumerable<IdentityError>>(createResult.Errors, "Failed to create user."));
+        }
+
+        var addRoleResult = await userManager.AddToRoleAsync(user, dto.Role);
+        if (!addRoleResult.Succeeded)
+        {
+            return BadRequest(
+                new ResponseModel<IEnumerable<IdentityError>>(addRoleResult.Errors, $"Failed to set user role to ${dto.Role}"));
+        }
+
+        return Ok(new ResponseModel<ApplicationUser>(user, "new Apprentice created successfully"));
+    }
+
+    [HttpPut("update-apprentice")]
+    public async Task<IActionResult> UpdateUser([FromBody] UpdateUserModel dto)
+    {
+        var user = await userManager.FindByEmailAsync(dto.Email);
+
+        if (user == null)
+        {
+            return BadRequest(
+                new ResponseModel<ApplicationBuilder>(null, $"User with email ${dto.Email} doesn't exists."));
+        }
+
+        user.FirstName = dto.FirstName;
+        user.LastName = dto.LastName;
+        user.UserName = dto.Email;
+        user.Email = dto.Email;
+        user.CourseId = dto.CourseId;
+        user.ProgressScore = dto.ProgressScore;
+
+        var updateResult = await userManager.UpdateAsync(user);
+
+        if (!updateResult.Succeeded)
+        {
+            return BadRequest(
+                new ResponseModel<IEnumerable<IdentityError>>(updateResult.Errors, "Failed to update user data"));
+        }
+
+        var updateRoleResult = await userManager.AddToRoleAsync(user, dto.Role);
+        if (!updateRoleResult.Succeeded)
+        {
+            return BadRequest(
+                new ResponseModel<IEnumerable<IdentityError>>(updateRoleResult.Errors, "Failed to update User Role"));
+        }
+
+        return Ok(new ResponseModel<ApplicationUser>(user, $"new {dto.Role} updated successfully"));
+    }
+
+
     [HttpGet("get-users")]
     public async Task<IActionResult> GetDevUsers()
     {
@@ -18,48 +96,11 @@ public class UserController(IdentityApplicationDbContext dbContext, UserManager<
         return Ok(users);
     }
 
-    /*[HttpGet("get-users")]
-    public async Task<IActionResult> GetDevUsers()
-    {
-        var users = await dbContext.Users
-            .Select(u => new
-            {
-                u.Id,
-                u.UserName,
-                u.Email,
-                u.EmailConfirmed
-            })
-            .ToListAsync();
-
-        return Ok(users);
-    }*/
-
     [HttpGet("get-dev-users")]
     public async Task<IActionResult> GetAllUsers()
     {
         var users = await dbContext.UserDev.AsNoTracking().ToListAsync();
 
         return Ok(users);
-    }
-
-
-    [HttpGet("weather-forecast")]
-    public WeatherForecast[] HealthCheck()
-    {
-        var summaries = new[]
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
-
-        var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-
-        return forecast;
     }
 }
