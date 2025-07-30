@@ -1,5 +1,7 @@
 using Application.Models;
+using Infrastructure.Identity;
 using Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,11 +9,38 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class UserController(ApplicationDbContext db) : ControllerBase
+public class UserController(IdentityApplicationDbContext dbContext, UserManager<ApplicationUser> userManager) : ControllerBase
 {
     [HttpGet("get-users")]
-    public async Task<IEnumerable<User>> Get() =>
-        await db.UsersDev.ToListAsync();
+    public async Task<IActionResult> GetDevUsers()
+    {
+        var users = await userManager.Users.ToListAsync();
+        return Ok(users);
+    }
+
+    /*[HttpGet("get-users")]
+    public async Task<IActionResult> GetDevUsers()
+    {
+        var users = await dbContext.Users
+            .Select(u => new
+            {
+                u.Id,
+                u.UserName,
+                u.Email,
+                u.EmailConfirmed
+            })
+            .ToListAsync();
+
+        return Ok(users);
+    }*/
+
+    [HttpGet("get-dev-users")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = await dbContext.UserDev.AsNoTracking().ToListAsync();
+
+        return Ok(users);
+    }
 
 
     [HttpGet("weather-forecast")]
