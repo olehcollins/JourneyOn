@@ -1,6 +1,7 @@
 using Application.Models;
 using Infrastructure.Identity;
 using Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -158,7 +159,8 @@ public class UserController(IdentityApplicationDbContext dbContext, UserManager<
         return Ok(new ResponseModel<List<MilestoneModel>>(milestones, ""));
     }
 
-    [HttpGet("get-users")]
+    [AllowAnonymous]
+    [HttpGet("all-users")]
     public async Task<IActionResult> GetDevUsers()
     {
         var users = await userManager.Users.ToListAsync();
