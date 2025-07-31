@@ -58,7 +58,7 @@ public sealed class AccessTokenService (IConfiguration configuration, UserManage
         {
             {"user_id", user.Id.ToString()},
             { "access_token", accessToken },
-            { "token_expiration", DateTime.UtcNow.AddMinutes(30).ToString("o")},
+            { "token_expiration", DateTime.UtcNow.AddMinutes(1440).ToString("o")},
         };
     }
 }
