@@ -87,4 +87,8 @@ public class AuthController(
 
         return Ok(new ResponseModel<string>(null, "Reset password successful"));
     }
+
+    [AllowAnonymous]
+    [HttpGet("health")]
+    public async Task<ActionResult> Health() => Ok();
 }
