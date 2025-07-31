@@ -90,5 +90,5 @@ public class AuthController(
 
     [AllowAnonymous]
     [HttpGet("health")]
-    public async Task<ActionResult> Health() => Ok();
+    public ActionResult Health() => Ok();
 }
