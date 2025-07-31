@@ -23,4 +23,7 @@ public sealed class ApplicationUser : IdentityUser<int>
 
     [Column("UpdatedAt")]
     public DateTime UpdatedAt { get; set; }
+
+    [Column("message_id")]
+    public int? MessageId { get; set; }
 }
