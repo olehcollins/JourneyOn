@@ -9,7 +9,7 @@ public static class SerilogExtension
     public static IHostBuilder AddSerilogDocumentation(this IHostBuilder host,
         IWebHostEnvironment env)
     {
-        if (env.IsDevelopment())
+        if (env.IsDevelopment() || env.IsProduction())
             host.UseSerilog((context, services, configuration) =>
                 configuration.ReadFrom.Configuration(context.Configuration)
                     .ReadFrom.Services(services)
