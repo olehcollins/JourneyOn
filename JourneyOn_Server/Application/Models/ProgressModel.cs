@@ -17,6 +17,5 @@ public sealed class ProgressModel
     [Column("status")]
     public string Status { get; set; }
 
-    [Column("completed_at")]
-    public DateTime CompletedAt { get; set; }
-};
+    [Column("completed_at")] public DateTime? CompletedAt { get; set; }
+}
