@@ -49,6 +49,27 @@ public class UserController(IdentityApplicationDbContext dbContext, UserManager<
                 new ResponseModel<IEnumerable<IdentityError>>(addRoleResult.Errors, $"Failed to set user role to {dto.Role}"));
         }
 
+        var userId = (await userManager.FindByEmailAsync(dto.Email))!.Id;
+        var milestones = await dbContext.MilestoneTable
+            .Where(x => x.Id == dto.CourseId)
+            .Select(m => m.Id)
+            .ToArrayAsync();
+
+        var progressEntries = milestones.Select(milestoneId => new ProgressModel
+        {
+            UserId = userId,
+            MilestoneId = milestoneId,
+            Status = "uncompleted",
+            CompletedAt = null
+        }).ToList();
+
+        dbContext.ProgressTable.AddRange(progressEntries);
+        if (await dbContext.SaveChangesAsync() < 0)
+        {
+            return Ok(new ResponseModel<ApplicationUser>(user, $"new {dto.Role} added successfully but failed to create milestones for the user"));
+        }
+
+
         return Ok(new ResponseModel<ApplicationUser>(user, "new Apprentice created successfully"));
     }
 
@@ -98,19 +119,49 @@ public class UserController(IdentityApplicationDbContext dbContext, UserManager<
         return Ok(new ResponseModel<ApplicationUser>(user, $"new {dto.Role} updated successfully"));
     }
 
+    [HttpGet("get-user-details/{id}")]
+    public async Task<IActionResult> GetUserDetails(int id)
+    {
+        var user = await userManager.FindByIdAsync(id.ToString());
+        if (user == null)
+        {
+            return NotFound(new ResponseModel<string>(null, "User not found"));
+        }
+        // get message
+        var messageRecord = await dbContext.MessageTable.FindAsync(user.MessageId);
+        // get course
+        var courseRecord = await dbContext.CourseTable.FindAsync(user.CourseId);
+        // get dairy entries
+        var dairyRecords = await dbContext.DairyTable.Where(x => x.UserId == user.Id).ToListAsync();
+
+        var data = new Dictionary<string, object>
+        {
+            { "course", courseRecord.CourseName},
+            {"message", messageRecord.Message},
+            {"diary_entries", dairyRecords}
+        };
+        ;
+
+        return  Ok(new ResponseModel<Dictionary<string, object>>(data, ""));
+    }
+
+    [HttpGet("get-milestones/{id}")]
+    public async Task<IActionResult> GetMilestones(int id)
+    {
+        var users = await userManager.FindByIdAsync(id.ToString());
+        if (users == null)
+        {
+            return NotFound(new ResponseModel<string>(null, "User not found"));
+        }
+        var milestones = await dbContext.MilestoneTable.Where(x =>  x.CourseId == users.CourseId).ToListAsync();
+
+        return Ok(new ResponseModel<List<MilestoneModel>>(milestones, ""));
+    }
 
     [HttpGet("get-users")]
     public async Task<IActionResult> GetDevUsers()
     {
         var users = await userManager.Users.ToListAsync();
-        return Ok(users);
-    }
-
-    [HttpGet("get-dev-users")]
-    public async Task<IActionResult> GetAllUsers()
-    {
-        var users = await dbContext.UserDev.AsNoTracking().ToListAsync();
-
         return Ok(users);
     }
 }

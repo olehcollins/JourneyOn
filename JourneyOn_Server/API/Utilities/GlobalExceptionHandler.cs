@@ -21,12 +21,12 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
-            Exception = exception,
+            Exception = exception.InnerException,
             ProblemDetails = new ProblemDetails
             {
                 Type = exception.GetType().Name,
                 Title = "An Error has occurred",
-                Detail = exception.Message
+                Detail = exception.Message,
             }
         });
     }
