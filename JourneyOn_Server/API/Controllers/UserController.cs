@@ -172,8 +172,8 @@ public async Task<IActionResult> GetMilestones(int userId)
 }
 
     [AllowAnonymous]
-    [HttpGet("get-all-users")]
-    public async Task<IActionResult> GetDevUsers()
+    [HttpGet("open-get-users")]
+    public async Task<IActionResult> GetUsers()
     {
         var users = await userManager.Users.ToListAsync();
         return Ok(users);
