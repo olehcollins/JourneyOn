@@ -49,14 +49,13 @@ public sealed class AccessTokenService (IConfiguration configuration, UserManage
             issuer: jwtIssuer,
             audience: jwtAudience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(30),
+            expires: DateTime.UtcNow.AddMinutes(1400),
             signingCredentials: credentials);
         var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
 
         // Return the tokens as a dictionary.
         return new Dictionary<string, string?>
         {
-            {"user_id", user.Id.ToString()},
             { "access_token", accessToken },
             { "token_expiration", DateTime.UtcNow.AddMinutes(1440).ToString("o")},
         };

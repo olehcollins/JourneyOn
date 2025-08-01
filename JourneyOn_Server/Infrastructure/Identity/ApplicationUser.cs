@@ -13,7 +13,7 @@ public sealed class ApplicationUser : IdentityUser<int>
     public string LastName { get; set; }
 
     [Column("CourseId")]
-    public int? CourseId { get; set; }
+    public int CourseId { get; set; }
 
     [Column("ProgressScore", TypeName = "numeric(5,2)")]
     public decimal ProgressScore { get; set; } = 0.00m;

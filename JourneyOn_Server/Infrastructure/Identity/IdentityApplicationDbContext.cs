@@ -13,7 +13,7 @@ public class IdentityApplicationDbContext(DbContextOptions<IdentityApplicationDb
     public DbSet<MilestoneModel> MilestoneTable { get; set; }
     public DbSet<MessageModel> MessageTable { get; set; }
     public DbSet<CourseModel> CourseTable { get; set; }
-    public DbSet<DairyModel>  DairyTable { get; set; }
+    public DbSet<DiaryModel>  DairyTable { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -28,5 +28,19 @@ public class IdentityApplicationDbContext(DbContextOptions<IdentityApplicationDb
 
         builder.Entity<MilestoneModel>()
             .HasKey(p => p.Id);
+        builder.Entity<DiaryModel>(eb =>
+        {
+            eb.HasKey(e => e.Id);
+            eb.Property(e => e.Id)
+                .HasColumnName("id")
+                .ValueGeneratedOnAdd();
+
+            eb.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            eb.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .ValueGeneratedOnAddOrUpdate();
+        });
     }
 }

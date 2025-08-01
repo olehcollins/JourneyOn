@@ -13,10 +13,10 @@ namespace API.Controllers;
 [Route("[controller]")]
 public class ProgressController(IdentityApplicationDbContext dbContext, UserManager<ApplicationUser> userManager) : ControllerBase
 {
-    [HttpPut("update-progress")]
+    [HttpPut("update-milestone-status")]
     public async Task<ActionResult> UpdateUserProgress([FromBody] ProgressModel model)
     {
-        if (!ModelState.IsValid || (model.Status != "completed" && model.Status != "uncompleted"))
+        if (!ModelState.IsValid || (model.Status != "completed" && model.Status != "in-progress"))
         {
             return BadRequest(new ResponseModel<string>(ModelState.ToString(), "Invalid input"));
         }

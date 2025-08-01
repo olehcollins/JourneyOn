@@ -39,11 +39,24 @@ public class AuthController(
             return Unauthorized(new ResponseModel<string>(null, "Invalid login credentials"));
         }
 
-        var newTokens = await tokenService.GenerateTokensAsync(user);
+        var userRole = (await userManager.GetRolesAsync(user)).FirstOrDefault();
+        var tokenData = await tokenService.GenerateTokensAsync(user);
+
+        var signedInUser = new SignInedUser
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email!,
+            CourseId = user.CourseId,
+            ProgressScore = user.ProgressScore,
+            Role = userRole!,
+            TokenData = tokenData
+        };
 
         return Ok(
-            new ResponseModel<Dictionary<string, string?>>(
-                newTokens, "Successfully sign in."));
+            new ResponseModel<SignInedUser>(
+                signedInUser, "Successfully sign in."));
     }
 
     [HttpGet("sign-out/{userId}")]

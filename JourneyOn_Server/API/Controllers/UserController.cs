@@ -146,21 +146,33 @@ public class UserController(IdentityApplicationDbContext dbContext, UserManager<
         return  Ok(new ResponseModel<Dictionary<string, object>>(data, ""));
     }
 
-    [HttpGet("get-milestones/{id}")]
-    public async Task<IActionResult> GetMilestones(int id)
+[HttpGet("get-milestones/{userId}")]
+public async Task<IActionResult> GetMilestones(int userId)
+{
+    var user = await userManager.FindByIdAsync(userId.ToString());
+    if (user == null)
     {
-        var users = await userManager.FindByIdAsync(id.ToString());
-        if (users == null)
-        {
-            return NotFound(new ResponseModel<string>(null, "User not found"));
-        }
-        var milestones = await dbContext.MilestoneTable.Where(x =>  x.CourseId == users.CourseId).ToListAsync();
-
-        return Ok(new ResponseModel<List<MilestoneModel>>(milestones, ""));
+        return NotFound(new ResponseModel<string>(null, "User not found"));
     }
 
+    var milestoneProgressList = await (
+        from p in dbContext.ProgressTable
+        where p.UserId == user.Id
+        join m in dbContext.MilestoneTable
+            on p.MilestoneId equals m.Id
+        select new Dictionary<string, object>
+        {
+            { "Milestone", m },
+            { "Status", p.Status },
+            { "CompletedAt", p.CompletedAt }
+        }
+    ).ToListAsync();
+
+    return Ok(new ResponseModel<List<Dictionary<string, object>>>(milestoneProgressList, ""));
+}
+
     [AllowAnonymous]
-    [HttpGet("all-users")]
+    [HttpGet("get-all-users")]
     public async Task<IActionResult> GetDevUsers()
     {
         var users = await userManager.Users.ToListAsync();

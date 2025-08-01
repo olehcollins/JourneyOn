@@ -28,7 +28,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<IdentityApplicationDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")));
-Console.WriteLine(connectionString);
+
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
     {
         // you can tune these password/lockout settings as needed
@@ -49,6 +49,13 @@ builder.Services.AddControllers(options =>
         .Build();
     options.Filters.Add(new AuthorizeFilter(policy));
 });
+builder.Services.AddCors(opts =>
+    opts.AddPolicy("OpenPolicy", p =>
+        p.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+    )
+);
 
 
 
@@ -68,6 +75,7 @@ if (app.Environment.IsDevelopment())
      );
 }
 
+app.UseCors("OpenPolicy");
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseAuthentication();
